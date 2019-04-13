@@ -18,11 +18,12 @@
 .. moduleauthor:: Gabriel Martin Becedillas Ruiz <gabriel.becedillas@gmail.com>
 """
 
+import six
 import collections
-
+import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import ticker
-import six
+from matplotlib.ticker import Formatter
 
 from pyalgotrade import broker
 from pyalgotrade import warninghelpers
@@ -60,6 +61,16 @@ def _post_plot_fun(subPlot, mplSubplot):
     # Don't scale the Y axis
     mplSubplot.yaxis.set_major_formatter(ticker.ScalarFormatter(useOffset=False))
 
+class SFormatter(Formatter):
+    def __init__(self, dates, fmt='%Y-%m-%d'):
+        self.dates = dates
+        self.fmt = fmt
+
+    def __call__(self, x, pos=0):
+        'Return the label for time x at position pos'
+        ind = int(np.round(x))
+        if ind >= len(self.dates) or ind < 0: return ''
+        return self.dates[ind].strftime(self.fmt)
 
 class Series(object):
     def __init__(self):
@@ -87,7 +98,9 @@ class Series(object):
         values = []
         for dateTime in dateTimes:
             values.append(self.getValue(dateTime))
-        mplSubplot.plot(dateTimes, values, color=color, marker=self.getMarker())
+        formatter = SFormatter(dateTimes)
+        mplSubplot.xaxis.set_major_formatter(formatter)
+        mplSubplot.plot(np.arange(len(dateTimes)), values, color=color, marker=self.getMarker())
 
 
 class BuyMarker(Series):
